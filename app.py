@@ -24,7 +24,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-# Load Service Account from Render Environment Variable
+# Load service account from Render Environment Variable
 service_account_info = json.loads(os.environ["SERVICE_ACCOUNT_JSON"])
 
 creds = Credentials.from_service_account_info(
@@ -34,7 +34,14 @@ creds = Credentials.from_service_account_info(
 
 gc = gspread.authorize(creds)
 sheet = gc.open_by_key(SHEET_ID).sheet1
-drive_service = build("drive", "v3", credentials=creds)
+
+# Important for Shared Drive
+drive_service = build(
+    "drive",
+    "v3",
+    credentials=creds,
+    cache_discovery=False
+)
 
 HTML_FORM = """
 <!DOCTYPE html>
@@ -173,7 +180,8 @@ def form():
                             "parents": [FOLDER_ID]
                         },
                         media_body=media,
-                        fields="id"
+                        fields="id",
+                        supportsAllDrives=True
                     ).execute()
 
                     file_id = uploaded["id"]
@@ -197,7 +205,7 @@ def form():
             return "Success"
 
         except Exception as e:
-            return str(e)
+            return f"Error: {str(e)}"
 
     return render_template_string(HTML_FORM)
 
